@@ -1,0 +1,53 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Package">
+    <PropertyGroup>
+        <Platform>Any CPU</Platform>
+        <Configuration>Release</Configuration>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <SolutionName>calccli.sln</SolutionName>
+        <ProjectName>calccli</ProjectName>
+        <ProjectFolder>$(ProjectName)</ProjectFolder>
+        <ProjectFile>$(ProjectFolder)\$(ProjectName).csproj</ProjectFile>
+        <SolutionDir Condition=" '$(SolutionDir)'=='' ">$(MSBuildThisFileDirectory)\</SolutionDir>
+        <ArtifactsFolder>Artifacts</ArtifactsFolder>
+        <OutputFolderName>Output</OutputFolderName>
+        <OutputFolder>$(ProjectFolder)\$(OutputFolderName)</OutputFolder>
+        <ZipFilePath>$(ArtifactsFolder)\$(ProjectName).zip</ZipFilePath>
+    </PropertyGroup>
+
+    <!--    Targets    -->
+
+    <Target Name="Package" DependsOnTargets="RebuildSolution">
+        <Message Text="Ensure Zip folder exists" />
+        <MakeDir Directories="$(ArtifactsFolder)" Condition="!Exists('$(ArtifactsFolder)')"/>
+
+        <Message Text="Zip files" />
+        <ZipDirectory SourceDirectory="$(OutputFolder)" DestinationFile="$(ZipFilePath)" Overwrite="true" />
+        <Message Text="Zip file created" />
+    </Target>
+
+    <Target Name="RebuildSolution" DependsOnTargets="Clean">
+        <Message Text="Begin Rebuild" />
+        <!--
+        The restore target (Targets="Restore;...") works only for projects using the PackageReference format.
+        It does not work for projects using the packages.config format; use nuget restore instead.
+        Ref: https://docs.microsoft.com/en-us/nuget/reference/msbuild-targets#restore-target
+        Reference to PackageReference format docs: https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files
+        -->
+        <!--
+        OutputPath location is created automatically inside "MSBuild" task properties, and when specifying it there it should be relative to the location of the .csproj file.
+        That is why the folder **name** is specified (instead of a path, which it can be... but full path must be specified instead).
+        -->
+        <MSBuild Projects="$(ProjectFile)" Targets="Restore;Rebuild" Properties="Configuration=Release;OutputPath=$(OutputFolderName)" />
+        <Message Text="Complete Rebuild" />
+    </Target>
+
+    <Target Name="Clean">
+        <Message Text="Begin Clean" />
+        <MSBuild Projects="$(ProjectFile)" Targets="Clean"/>
+        <RemoveDir Directories="$(OutputFolder);$(ArtifactsFolder)" />
+        <Message Text="Completed Clean" />
+    </Target>
+
+</Project>
